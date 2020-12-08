@@ -1,0 +1,1575 @@
+00001000 Starting Address
+Assembler used: EASy68K Editor/Assembler v5.15.04
+Created On: 28/05/2017 23:05:32
+
+00000000                             1  *-----------------------------------------------------------
+00000000                             2  * Title      : Candy Crash      
+00000000                             3  * Written by : Rafael Pires Orozco & Irtaza Ali Ajmal
+00000000                             4  * Date       : 15-05-2017
+00000000                             5  * Description: All copyrights reserved.
+00000000                             6  *-----------------------------------------------------------
+00001000                             7      ORG    $1000
+00001000  4EB9 00001B5E              8                             JSR HELLO_PLAYER *mensaje inicial y autores
+00001006                             9      
+00001006  4EB9 00001B3A             10                             JSR CREAR_TABLA  *crea matriz visual
+0000100C                            11      
+0000100C  4EB9 0000183C             12                             JSR REFRESCO_PANTALLA *pone los primeros candys
+00001012                            13                             
+00001012                            14                             
+00001012  23FC 00002000 00005004    15      MOVE.L #RESERVA,PUNTERO_RESERVA
+0000101C  23FC 00003000 00005000    16      MOVE.L #TABLERO, PUNTERO
+00001026                            17      
+00001026                            18  ******************************************************* 
+00001026                            19     
+00001026                            20  ELEGIR 
+00001026                            21  
+00001026  4EB9 000019F4             22                             JSR REFRESCO_PUNTERO *poner puntero en pos inicial   
+0000102C                            23  
+0000102C  4EB9 000010C0             24                             JSR MOVER_PUNTERO    *permite mover puntero                   
+00001032                            25          
+00001032  4EB9 00001268             26                             JSR MOVER_CANDY
+00001038                            27                             
+00001038  7A14                      28                             MOVE.L #20,D5   *retardo temporal
+0000103A  4EB9 0000177E             29                             JSR WASTE_TIME
+00001040                            30                             
+00001040                            31  COMPROBADOR_DE_ESTADO      
+00001040                            32       
+00001040  2839 00005008             33       MOVE.L ESTADO_SELECCION,D4
+00001046  B8BC 00000001             34       CMP.L #1,D4
+0000104C  6700 0006                 35       BEQ SIGUIENTE_1
+00001050  4EF8 1026                 36       JMP ELEGIR
+00001054                            37      
+00001054                            38  SIGUIENTE_1                          
+00001054                            39      
+00001054  4EB9 0000136C             40                          JSR BORRAR
+0000105A                            41      
+0000105A  4EB9 000015EA             42                          JSR RECTIFICAR
+00001060                            43                             
+00001060                            44                             
+00001060                            45  COMPROBADOR_DE_BORRADO   * pregunta si se ha borrado en caso afirmativo caer
+00001060  2839 0000E004             46       MOVE.L NUM_JUGADAS,D4      
+00001066  5384                      47       SUB.L #1,D4
+00001068  23C4 0000E004             48       MOVE.L D4,NUM_JUGADAS
+0000106E                            49       
+0000106E  2839 0000E000             50       MOVE.L N_CANCEL, D4
+00001074  B8BC 00000001             51       CMP.L #1,D4
+0000107A  6C00 0006                 52       BGE SIGUIENTE_2
+0000107E                            53       
+0000107E                            54      
+0000107E  4EF8 1026                 55       JMP ELEGIR
+00001082                            56                             
+00001082                            57  SIGUIENTE_2
+00001082  23FC 00000000 0000E000    58      MOVE.L #0,N_CANCEL    
+0000108C                            59      
+0000108C  4EB9 0000160E             60                              JSR CAIDA
+00001092                            61                              
+00001092  2839 0000E004             62      MOVE.L NUM_JUGADAS,D4   *comprueba si no se te han terminado las jugadas
+00001098  B8BC 00000000             63      CMP.L #0,D4
+0000109E  6700 0010                 64      BEQ END_GAME
+000010A2  23FC 00000000 00005008    65      MOVE.L #0,ESTADO_SELECCION
+000010AC                            66      
+000010AC  4EF8 1026                 67      JMP ELEGIR
+000010B0                            68      
+000010B0                            69  END_GAME    
+000010B0                            70      
+000010B0  4EB9 00001B8E             71      JSR BYE_PLAYER
+000010B6                            72      
+000010B6  4EF9 0000E00C             73      JMP THE_END *FINAL DEL PROGRAMA
+000010BC                            74      
+000010BC  FFFF FFFF                 75      SIMHALT
+000010C0                            76                         
+000010C0                            77      
+000010C0                            78  **********************************************************
+000010C0                            79  *FUNCIONES PRINCIPALES
+000010C0                            80  **********************************************************
+000010C0                            81  MOVER_PUNTERO      *D6 SERÁ NUESTRO PUNTERO PARA PODER ESCOGER EL CANDY*
+000010C0                            82                      
+000010C0                            83        
+000010C0                            84        
+000010C0                            85  LOOP_1                       *LEER TECLADO ACCIÓN DEL TECLADO*                            
+000010C0  2C39 00005000             86        MOVE.L  PUNTERO, D6                           
+000010C6  7013                      87        MOVE.L  #19,D0            
+000010C8  4281                      88        CLR.L D1 
+000010CA  223C 25262728             89        MOVE.L #$25262728,D1                 
+000010D0  4E4F                      90        TRAP  #15
+000010D2                            91             
+000010D2  B2BC 00FF0000             92        CMP.L #$00FF0000,D1 
+000010D8  6700 0066                 93        BEQ MOVE_UP              *FLECHA ARRIBA
+000010DC  B2BC 0000FF00             94        CMP.L #$0000FF00,D1 
+000010E2  6700 009A                 95        BEQ MOVE_RIGHT           *FLECHA DERECHA
+000010E6  B2BC 000000FF             96        CMP.L #$000000FF,D1 
+000010EC  6700 00C8                 97        BEQ MOVE_DOWN            *FLECHA ABAJO
+000010F0  B2BC FF000000             98        CMP.L #$FF000000,D1 
+000010F6  6700 00FA                 99        BEQ MOVE_LEFT            *FLECHA IZQUIERDA
+000010FA                           100        
+000010FA  2C39 00005000            101        MOVE.L  PUNTERO, D6                           
+00001100  7013                     102        MOVE.L  #19,D0             
+00001102  720D                     103        MOVE.L #$0000000D,D1     *seleccionar               
+00001104  4E4F                     104        TRAP  #15
+00001106  23C1 0000500C            105        MOVE.L D1, KEYBOARD_INPUT
+0000110C                           106              
+0000110C  B2BC 000000FF            107        CMP.L #$000000FF,D1
+00001112  6700 0116                108        BEQ CHOOSE
+00001116                           109        
+00001116                           110  *     CMP.L #$001B001B,D1
+00001116                           111  *     BEQ EXIT
+00001116                           112        
+00001116  4281                     113        CLR.L D1
+00001118  4282                     114        CLR.L D2
+0000111A  23FC 00000000 0000500C   115        MOVE.L #0,KEYBOARD_INPUT
+00001124                           116            
+00001124  4EF8 10C0                117        JMP LOOP_1
+00001128                           118  EXIT
+00001128  13FC 0001 0000D039       119        MOVE.B #1,FINISH_GAME
+00001130  4E75                     120        RTS
+00001132                           121        
+00001132                           122        
+00001132                           123  FIN_MOV_1
+00001132                           124  
+00001132  7A0D                     125       MOVE.L #13,D5
+00001134                           126  *    JSR WASTE_TIME
+00001134  4EB9 0000181A            127       JSR TIEMPO_TECLADO  
+0000113A  4EF8 10C0                128       JMP LOOP_1
+0000113E                           129  
+0000113E                           130  FIN_MOV_2
+0000113E                           131  
+0000113E  4E75                     132        RTS       
+00001140                           133  
+00001140                           134  MOVE_UP
+00001140  23FC 00000000 00005008   135       MOVE.L #0,ESTADO_SELECCION
+0000114A                           136       
+0000114A  0486 00000010            137       SUB.L #$10,D6
+00001150  4EB9 0000178C            138       JSR ALLOWED_AD
+00001156  4285                     139       CLR.L D5
+00001158  1A39 0000D038            140       MOVE.B ALLOWED, D5
+0000115E  BA3C 0001                141       CMP.B #1, D5
+00001162  6600 FF5C                142       BNE LOOP_1
+00001166  23C6 00005000            143       MOVE.L D6, PUNTERO
+0000116C                           144       
+0000116C  4EB9 00001AA0            145       JSR BORRAR_PUNTERO
+00001172  4EB9 000019F4            146       JSR REFRESCO_PUNTERO
+00001178                           147       
+00001178                           148       
+00001178                           149   
+00001178  4281                     150       CLR.L D1
+0000117A  4EF8 1132                151       JMP FIN_MOV_1
+0000117E                           152  MOVE_RIGHT
+0000117E  23FC 00000000 00005008   153       MOVE.L #0,ESTADO_SELECCION
+00001188                           154       
+00001188  5286                     155       ADD.L #$1,D6
+0000118A  4EB9 0000178C            156       JSR ALLOWED_AD
+00001190  1A39 0000D038            157       MOVE.B ALLOWED, D5
+00001196  BA3C 0001                158       CMP.B #1, D5
+0000119A  6600 FF24                159       BNE LOOP_1 
+0000119E  23C6 00005000            160       MOVE.L D6, PUNTERO
+000011A4                           161       
+000011A4  4EB9 00001AA0            162       JSR BORRAR_PUNTERO
+000011AA  4EB9 000019F4            163       JSR REFRESCO_PUNTERO
+000011B0                           164       
+000011B0                           165       
+000011B0                           166       
+000011B0  4281                     167       CLR.L D1
+000011B2  4EF8 1132                168       JMP FIN_MOV_1
+000011B6                           169       
+000011B6                           170  MOVE_DOWN
+000011B6  23FC 00000000 00005008   171       MOVE.L #0,ESTADO_SELECCION
+000011C0                           172       
+000011C0  0686 00000010            173       ADD.L #$10,D6
+000011C6  4EB9 0000178C            174       JSR ALLOWED_AD
+000011CC  1A39 0000D038            175       MOVE.B ALLOWED, D5
+000011D2  BA3C 0001                176       CMP.B #1, D5
+000011D6  6600 FEE8                177       BNE LOOP_1 
+000011DA  23C6 00005000            178       MOVE.L D6, PUNTERO
+000011E0                           179       
+000011E0  4EB9 00001AA0            180       JSR BORRAR_PUNTERO
+000011E6  4EB9 000019F4            181       JSR REFRESCO_PUNTERO
+000011EC                           182       
+000011EC                           183     
+000011EC                           184       
+000011EC  4281                     185       CLR.L D1
+000011EE  4EF8 1132                186       JMP FIN_MOV_1
+000011F2                           187       
+000011F2                           188  MOVE_LEFT
+000011F2  23FC 00000000 00005008   189       MOVE.L #0,ESTADO_SELECCION
+000011FC                           190       
+000011FC  5386                     191       SUB.L #$1,D6
+000011FE  4EB9 0000178C            192       JSR ALLOWED_AD
+00001204  1A39 0000D038            193       MOVE.B ALLOWED, D5
+0000120A  BA3C 0001                194       CMP.B #1, D5
+0000120E  6600 FEB0                195       BNE LOOP_1 
+00001212  23C6 00005000            196       MOVE.L D6, PUNTERO
+00001218                           197       
+00001218  4EB9 00001AA0            198       JSR BORRAR_PUNTERO
+0000121E  4EB9 000019F4            199       JSR REFRESCO_PUNTERO
+00001224                           200       
+00001224                           201       
+00001224                           202       
+00001224  4281                     203       CLR.L D1
+00001226  4EF8 1132                204       JMP FIN_MOV_1
+0000122A                           205       
+0000122A                           206  CHOOSE 
+0000122A  23FC 00000001 00005008   207       MOVE.L #1, ESTADO_SELECCION
+00001234  23C6 00005000            208       MOVE.L D6, PUNTERO
+0000123A  4281                     209       CLR.L D1
+0000123C  4EB9 00001AA0            210       JSR BORRAR_PUNTERO
+00001242  4EB9 000019F4            211       JSR REFRESCO_PUNTERO    
+00001248  4EF8 113E                212       JMP FIN_MOV_2
+0000124C                           213       
+0000124C                           214  NO_CHOOSE
+0000124C  23FC 00000000 00005008   215       MOVE.L #0, ESTADO_SELECCION
+00001256  4EB9 00001AA0            216       JSR BORRAR_PUNTERO
+0000125C  4EB9 000019F4            217       JSR REFRESCO_PUNTERO
+00001262  4281                     218       CLR.L D1
+00001264  4EF8 113E                219       JMP FIN_MOV_2
+00001268                           220       
+00001268                           221  ***********************************************************************
+00001268                           222  
+00001268                           223  MOVER_CANDY  *EFECTUA EL MOVIMIENTO EN MEMORIA    
+00001268                           224  
+00001268                           225        
+00001268                           226  
+00001268                           227  LOOP_2                                
+00001268                           228                                         
+00001268  7013                     229        MOVE.L  #19,D0            
+0000126A  4281                     230        CLR.L D1                  
+0000126C  4E4F                     231        TRAP  #15                 
+0000126E  23C1 0000500C            232        MOVE.L D1,KEYBOARD_INPUT          
+00001274                           233                                  
+00001274  B2BC 00000000            234        CMP.L #0,D1               
+0000127A  6600 0006                235        BNE MOVIMIENTO        
+0000127E                           236                                  
+0000127E  4EF8 1268                237        JMP LOOP_2
+00001282                           238  
+00001282                           239  MOVIMIENTO   
+00001282  4284                     240        CLR.L D4
+00001284  4285                     241        CLR.L D5
+00001286                           242        
+00001286  B2BC 00260026            243        CMP.L #$00260026,D1 
+0000128C  6700 002C                244        BEQ MOVIMIENTO_ARRIBA      *FLECHA ARRIBA
+00001290  B2BC 00270027            245        CMP.L #$00270027,D1 
+00001296  6700 0046                246        BEQ MOVIMIENTO_DERECHA     *FLECHA DERECHA
+0000129A  B2BC 00280028            247        CMP.L #$00280028,D1 
+000012A0  6700 005C                248        BEQ MOVIMIENTO_ABAJO       *FLECHA ABAJO
+000012A4  B2BC 00250025            249        CMP.L #$00250025,D1 
+000012AA  6700 0076                250        BEQ MOVIMIENTO_IZQUIERDA   *FLECHA IZQUIERDA 
+000012AE  B2BC 001B001B            251        CMP.L #$001B001B,D1 
+000012B4  6796                     252        BEQ NO_CHOOSE         *TECLA ESC
+000012B6                           253  
+000012B6  4EF8 1268                254        JMP LOOP_2
+000012BA                           255  
+000012BA                           256  MOVIMIENTO_ARRIBA 
+000012BA                           257      
+000012BA  2839 00005000            258      MOVE.L PUNTERO,D4           *PTO INICIAL DEL MOVIMIENTO
+000012C0  2A04                     259      MOVE.L D4,D5
+000012C2  0485 00000010            260      SUB.L  #$10,D5              *PTO FINAL DEL MOVIMIENTO
+000012C8  23C4 00005010            261      MOVE.L D4,DIR_INICIAL
+000012CE  23C5 00005014            262      MOVE.L D5,DIR_FINAL
+000012D4  4EF9 0000133E            263      JMP MOVIMIENTO_MEMORIA
+000012DA                           264     
+000012DA  FFFF FFFF                265      SIMHALT
+000012DE                           266      
+000012DE                           267  MOVIMIENTO_DERECHA 
+000012DE  2839 00005000            268      MOVE.L PUNTERO,D4           *PTO INICIAL DEL MOVIMIENTO
+000012E4  2A04                     269      MOVE.L D4,D5
+000012E6  5285                     270      ADD.L  #$1,D5               *PTO FINAL DEL MOVIMIENTO
+000012E8  23C4 00005010            271      MOVE.L D4,DIR_INICIAL
+000012EE  23C5 00005014            272      MOVE.L D5,DIR_FINAL                                                      
+000012F4  4EF9 0000133E            273      JMP MOVIMIENTO_MEMORIA
+000012FA                           274      
+000012FA  FFFF FFFF                275      SIMHALT
+000012FE                           276      
+000012FE                           277  MOVIMIENTO_ABAJO 
+000012FE  2839 00005000            278      MOVE.L PUNTERO,D4           *PTO INICIAL DEL MOVIMIENTO
+00001304  2A04                     279      MOVE.L D4,D5
+00001306  0685 00000010            280      ADD.L  #$10,D5              *PTO FINAL DEL MOVIMIENTO
+0000130C  23C4 00005010            281      MOVE.L D4,DIR_INICIAL
+00001312  23C5 00005014            282      MOVE.L D5,DIR_FINAL
+00001318  4EF9 0000133E            283      JMP MOVIMIENTO_MEMORIA
+0000131E                           284      
+0000131E  FFFF FFFF                285      SIMHALT
+00001322                           286      
+00001322                           287  MOVIMIENTO_IZQUIERDA  
+00001322  2839 00005000            288      MOVE.L PUNTERO,D4          *PTO INICIAL DEL MOVIMIENTO
+00001328  2A04                     289      MOVE.L D4,D5
+0000132A  5385                     290      SUB.L  #$1,D5              *PTO FINAL DEL MOVIMIENTO
+0000132C  23C4 00005010            291      MOVE.L D4,DIR_INICIAL
+00001332  23C5 00005014            292      MOVE.L D5,DIR_FINAL
+00001338  4EF9 0000133E            293      JMP MOVIMIENTO_MEMORIA
+0000133E                           294      
+0000133E                           295          
+0000133E                           296  MOVIMIENTO_MEMORIA    
+0000133E  4284                     297      CLR.L D4
+00001340  4285                     298      CLR.L D5
+00001342                           299          
+00001342  2879 00005010            300      MOVE.L DIR_INICIAL,A4
+00001348  2A79 00005014            301      MOVE.L DIR_FINAL,A5
+0000134E                           302      
+0000134E  1814                     303      MOVE.B (A4),D4
+00001350  1A15                     304      MOVE.B (A5),D5
+00001352                           305      
+00001352  1A84                     306      MOVE.B D4,(A5)
+00001354  1885                     307      MOVE.B D5,(A4)
+00001356                           308      
+00001356  4EB9 00001AA0            309      JSR BORRAR_PUNTERO    
+0000135C                           310      
+0000135C  4EB9 0000183C            311      JSR REFRESCO_PANTALLA 
+00001362                           312      
+00001362  7A05                     313      MOVE.L #5,D5
+00001364  4EB9 0000177E            314      JSR WASTE_TIME
+0000136A                           315      
+0000136A  4E75                     316      RTS
+0000136C                           317      
+0000136C                           318  **************************************************************************************     
+0000136C                           319  BORRAR **********************ENCARGADO DE DAR VALOR CERO A LOS CANDY QUE SE CANCELEN *
+0000136C                           320  
+0000136C                           321      
+0000136C                           322      
+0000136C                           323  BORRADO_HORIZONTAL
+0000136C  23FC 00003000 0000A000   324      MOVE.L #TABLERO,MARCA_HORIZONTAL
+00001376  227C 00000000            325      MOVE.L #0, A1
+0000137C  4280                     326      CLR.L D0
+0000137E  4281                     327      CLR.L D1
+00001380  4286                     328      CLR.L D6
+00001382  4287                     329      CLR.L D7 
+00001384                           330      
+00001384                           331  LOOP_3
+00001384  4282                     332      CLR.L D2
+00001386  4283                     333      CLR.L D3
+00001388                           334         
+00001388  2479 0000A000            335      MOVE.L MARCA_HORIZONTAL,A2
+0000138E                           336      
+0000138E  264A                     337      MOVE.L A2,A3
+00001390                           338  LOOP_4
+00001390  4284                     339      CLR.L D4    
+00001392  528B                     340      ADD.L #1,A3
+00001394  1412                     341      MOVE.B (A2),D2
+00001396  1613                     342      MOVE.B (A3),D3
+00001398  B642                     343      CMP D2,D3
+0000139A  6700 0006                344      BEQ SUMA_HORIZONTAL
+0000139E  6600 0014                345      BNE PREGUNTA_HORIZONTAL        
+000013A2                           346      
+000013A2                           347  SUMA_HORIZONTAL
+000013A2                           348  
+000013A2  2839 0000B000            349      MOVE.L SUM_HORIZONTAL,D4
+000013A8  5284                     350      ADD.L #1,D4
+000013AA  23C4 0000B000            351      MOVE.L D4,SUM_HORIZONTAL
+000013B0  4EF8 1390                352      JMP LOOP_4
+000013B4                           353      
+000013B4                           354  PREGUNTA_HORIZONTAL *ES SUFICIENTE SUM_HORIZONTAL COMO PARA QUE SE BORRE?
+000013B4  2839 0000B000            355      MOVE.L SUM_HORIZONTAL,D4
+000013BA  B87C 0002                356      CMP #2,D4
+000013BE  6C00 0082                357      BGE CANCEL_HORIZONTAL
+000013C2                           358      
+000013C2                           359  NEXT_1  
+000013C2  23FC 00000000 0000B000   360      MOVE.L #0,SUM_HORIZONTAL
+000013CC  4284                     361      CLR.L D4
+000013CE  4285                     362      CLR.L D5
+000013D0  4EF9 000013E0            363      JMP FIN_LINEA
+000013D6                           364  NEXT_2    
+000013D6  23CB 0000A000            365      MOVE.L A3,MARCA_HORIZONTAL
+000013DC  4EF8 1384                366      JMP LOOP_3
+000013E0                           367      
+000013E0                           368  FIN_LINEA          *EL PROGRAMA SE PREGUNTA SI SE HA LLEGADO AL FINAL DE UNA FILA
+000013E0                           369      
+000013E0                           370      
+000013E0  B7FC 00003008            371      CMPA.L #$3008,A3 *FINAL 1A FILA
+000013E6  6700 0032                372      BEQ SALTO_H1
+000013EA  B7FC 00003018            373      CMPA.L #$3018,A3 *FINAL 2A FILA
+000013F0  6700 0032                374      BEQ SALTO_H2
+000013F4  B7FC 00003028            375      CMPA.L #$3028,A3 *FINAL 3A FILA
+000013FA  6700 0032                376      BEQ SALTO_H3
+000013FE  B7FC 00003038            377      CMPA.L #$3038,A3 *FINAL 4A FILA
+00001404  6700 0032                378      BEQ SALTO_H4
+00001408  B7FC 00003048            379      CMPA.L #$3048,A3   *FINAL ULTIMA FILA
+0000140E  6700 007C                380      BEQ BORRADO_VERTICAL
+00001412                           381      
+00001412                           382  NEXT_3    
+00001412  4EF8 13D6                383      JMP NEXT_2          
+00001416  FFFF FFFF                384      SIMHALT
+0000141A                           385      
+0000141A                           386  SALTO_H1
+0000141A  267C 00003010            387     MOVE.L #$3010,A3
+00001420  4EF8 1412                388     JMP NEXT_3
+00001424                           389  
+00001424                           390  SALTO_H2
+00001424  267C 00003020            391     MOVE.L #$3020,A3
+0000142A  4EF8 1412                392     JMP NEXT_3
+0000142E                           393      
+0000142E                           394  SALTO_H3
+0000142E  267C 00003030            395     MOVE.L #$3030,A3
+00001434  4EF8 1412                396     JMP NEXT_3
+00001438                           397  
+00001438                           398  SALTO_H4
+00001438  267C 00003040            399     MOVE.L #$3040,A3
+0000143E  4EF8 1412                400     JMP NEXT_3
+00001442                           401  
+00001442                           402  
+00001442                           403  
+00001442                           404  CANCEL_HORIZONTAL
+00001442  2839 0000E000            405      MOVE.L N_CANCEL,D4
+00001448  5284                     406      ADD.L #1,D4
+0000144A  23C4 0000E000            407      MOVE.L D4,N_CANCEL
+00001450  4284                     408      CLR.L D4
+00001452  4285                     409      CLR.L D5
+00001454  287C 00000000            410      MOVE.L #0,A4
+0000145A  2839 0000B000            411      MOVE.L SUM_HORIZONTAL,D4
+00001460  2A39 00005018            412      MOVE.L N_PUNTOS,D5
+00001466  DA84                     413      ADD.L D4,D5
+00001468  5285                     414      ADD.L #1,D5
+0000146A  23C5 00005018            415      MOVE.L D5, N_PUNTOS
+00001470  2879 0000A000            416      MOVE.L MARCA_HORIZONTAL,A4
+00001476                           417      
+00001476                           418      
+00001476                           419      
+00001476                           420  LOOP_5    
+00001476  18BC 0000                421      MOVE.B #0,(A4)
+0000147A  528C                     422      ADD.L #1,A4
+0000147C                           423      
+0000147C                           424      
+0000147C  B8BC 00000000            425      CMP.L #0,D4
+00001482  6700 FF3E                426      BEQ NEXT_1
+00001486                           427      
+00001486  5384                     428      SUB.L #1,D4
+00001488  4EF8 1476                429      JMP LOOP_5
+0000148C                           430       
+0000148C                           431      
+0000148C                           432  ************************************************************
+0000148C                           433  
+0000148C                           434  BORRADO_VERTICAL
+0000148C  23FC 00003000 0000A004   435      MOVE.L #TABLERO,MARCA_VERTICAL 
+00001496                           436      
+00001496                           437  LOOP_6
+00001496  4282                     438      CLR.L D2
+00001498  4283                     439      CLR.L D3
+0000149A                           440         
+0000149A  2479 0000A004            441      MOVE.L MARCA_VERTICAL,A2
+000014A0                           442      
+000014A0  264A                     443      MOVE.L A2,A3
+000014A2                           444  LOOP_7
+000014A2  4284                     445      CLR.L D4    
+000014A4  D7FC 00000010            446      ADD.L #$10,A3
+000014AA  1412                     447      MOVE.B (A2),D2
+000014AC  1613                     448      MOVE.B (A3),D3
+000014AE  B642                     449      CMP D2,D3
+000014B0  6700 0006                450      BEQ SUMA_VERTICAL
+000014B4  6600 0014                451      BNE PREGUNTA_VERTICAL
+000014B8                           452        
+000014B8                           453  SUMA_VERTICAL
+000014B8                           454  
+000014B8  2839 0000B004            455      MOVE.L SUM_VERTICAL,D4
+000014BE  5284                     456      ADD.L #1,D4
+000014C0  23C4 0000B004            457      MOVE.L D4,SUM_VERTICAL
+000014C6  4EF8 14A2                458      JMP LOOP_7
+000014CA                           459      
+000014CA                           460  PREGUNTA_VERTICAL   *ES SUFICIENTE SUM_HORIZONTAL COMO PARA QUE SE BORRE?
+000014CA  2839 0000B004            461      MOVE.L SUM_VERTICAL,D4
+000014D0  B87C 0002                462      CMP #2,D4
+000014D4  6C00 00BE                463      BGE CANCEL_VERTICAL
+000014D8                           464  NEXT_4    
+000014D8  23FC 00000000 0000B004   465      MOVE.L #0,SUM_VERTICAL
+000014E2  4284                     466      CLR.L D4
+000014E4  4285                     467      CLR.L D5
+000014E6  4EF9 000014F6            468      JMP FIN_COLUMNA
+000014EC                           469  NEXT_5   
+000014EC  23CB 0000A004            470      MOVE.L A3,MARCA_VERTICAL
+000014F2  4EF8 1496                471      JMP LOOP_6
+000014F6                           472      
+000014F6                           473  FIN_COLUMNA          *EL PROGRAMA SE PREGUNTA SI SE HA LLEGADO AL FINAL DE UNA COLUMNA
+000014F6                           474      
+000014F6                           475      
+000014F6  B7FC 00003050            476      CMPA.L #$3050,A3 *FINAL 1A COLUMNA
+000014FC  6700 0050                477      BEQ SALTO_V1
+00001500  B7FC 00003051            478      CMPA.L #$3051,A3 *FINAL 2A COLUMNA
+00001506  6700 0050                479      BEQ SALTO_V2
+0000150A  B7FC 00003052            480      CMPA.L #$3052,A3 *FINAL 3A COLUMNA
+00001510  6700 0050                481      BEQ SALTO_V3
+00001514  B7FC 00003053            482      CMPA.L #$3053,A3 *FINAL 4A COLUMNA
+0000151A  6700 0050                483      BEQ SALTO_V4
+0000151E  B7FC 00003054            484      CMPA.L #$3054,A3 *FINAL 5A COLUMNA
+00001524  6700 0050                485      BEQ SALTO_V5
+00001528  B7FC 00003055            486      CMPA.L #$3055,A3 *FINAL 6A COLUMNA
+0000152E  6700 0050                487      BEQ SALTO_V6
+00001532  B7FC 00003056            488      CMPA.L #$3056,A3 *FINAL 7A COLUMNA
+00001538  6700 0050                489      BEQ SALTO_V7
+0000153C  B7FC 00003057            490      CMPA.L #$3057,A3 *FINAL ULTIMA COLUMNA
+00001542  6700 009E                491      BEQ FIN_BORRADO    
+00001546                           492  
+00001546                           493  NEXT_6    
+00001546  4EF8 14EC                494      JMP NEXT_5          
+0000154A  FFFF FFFF                495      SIMHALT
+0000154E                           496      
+0000154E                           497  SALTO_V1
+0000154E  267C 00003001            498     MOVE.L #$3001,A3
+00001554  4EF8 1546                499     JMP NEXT_6
+00001558                           500  
+00001558                           501  SALTO_V2
+00001558  267C 00003002            502     MOVE.L #$3002,A3
+0000155E  4EF8 1546                503     JMP NEXT_6
+00001562                           504      
+00001562                           505  SALTO_V3
+00001562  267C 00003003            506     MOVE.L #$3003,A3
+00001568  4EF8 1546                507     JMP NEXT_6
+0000156C                           508  
+0000156C                           509  SALTO_V4
+0000156C  267C 00003004            510     MOVE.L #$3004,A3
+00001572  4EF8 1546                511     JMP NEXT_6
+00001576                           512     
+00001576                           513  SALTO_V5
+00001576  267C 00003005            514     MOVE.L #$3005,A3
+0000157C  4EF8 1546                515     JMP NEXT_6
+00001580                           516     
+00001580                           517  SALTO_V6
+00001580  267C 00003006            518     MOVE.L #$3006,A3
+00001586  4EF8 1546                519     JMP NEXT_6   
+0000158A                           520     
+0000158A                           521  SALTO_V7
+0000158A  267C 00003007            522     MOVE.L #$3007,A3
+00001590  4EF8 1546                523     JMP NEXT_6
+00001594                           524  
+00001594                           525  CANCEL_VERTICAL
+00001594  2839 0000E000            526      MOVE.L N_CANCEL,D4
+0000159A  5284                     527      ADD.L #1,D4
+0000159C  23C4 0000E000            528      MOVE.L D4,N_CANCEL
+000015A2                           529      
+000015A2  4284                     530      CLR.L D4
+000015A4  4285                     531      CLR.L D5
+000015A6                           532      
+000015A6  287C 00000000            533      MOVE.L #0,A4
+000015AC  2839 0000B004            534      MOVE.L SUM_VERTICAL,D4
+000015B2  2879 0000A004            535      MOVE.L MARCA_VERTICAL,A4
+000015B8  2A39 00005018            536      MOVE.L N_PUNTOS,D5
+000015BE  DA84                     537      ADD.L D4,D5
+000015C0  5285                     538      ADD.L #1,D5
+000015C2  23C5 00005018            539      MOVE.L D5, N_PUNTOS
+000015C8                           540  
+000015C8                           541      
+000015C8                           542  LOOP_8   
+000015C8  18BC 0000                543      MOVE.B #0,(A4)
+000015CC  D9FC 00000010            544      ADD.L #$10,A4
+000015D2                           545      
+000015D2  B8BC 00000000            546      CMP.L #0,D4
+000015D8  6700 FEFE                547      BEQ NEXT_4
+000015DC                           548      
+000015DC  5384                     549      SUB.L #1,D4
+000015DE  4EF8 15C8                550      JMP LOOP_8
+000015E2                           551  
+000015E2                           552  
+000015E2                           553  FIN_BORRADO
+000015E2  4EB9 0000183C            554      JSR REFRESCO_PANTALLA
+000015E8  4E75                     555      RTS
+000015EA                           556  ************************************************************
+000015EA                           557  RECTIFICAR   
+000015EA                           558  *   PARA RECTIFICAR UNA JUGADA SE LLAMA OTRA VEZ A LA FUNCION
+000015EA                           559  *   MOVIMIENTO DE MEMORIA
+000015EA  7A0A                     560      MOVE.L #10,D5 
+000015EC  4EB9 0000177E            561      JSR WASTE_TIME
+000015F2                           562    
+000015F2  2639 0000E000            563      MOVE.L N_CANCEL, D3
+000015F8  B6BC 00000000            564      CMP.L #0,D3
+000015FE  6600 000C                565      BNE FIN_RECTIFICADO
+00001602                           566      
+00001602  4EB8 133E                567      JSR MOVIMIENTO_MEMORIA
+00001606  4EB9 0000183C            568      JSR REFRESCO_PANTALLA
+0000160C                           569      
+0000160C                           570  
+0000160C                           571  FIN_RECTIFICADO
+0000160C  4E75                     572      RTS
+0000160E                           573  *********************************************************
+0000160E                           574  *************************************************************     
+0000160E                           575  CAIDA   *RELLENA LOS ESPACIOS QUE HAN QUEDADO EN BLANCO TRAS UNA CANCELACION*
+0000160E                           576        
+0000160E                           577      
+0000160E                           578      
+0000160E  4284                     579      CLR.L D4
+00001610  4282                     580      CLR.L D2
+00001612  4283                     581      CLR.L D3
+00001614  247C 00000000            582      MOVE.L #0,A2
+0000161A                           583     
+0000161A                           584  INITIAL
+0000161A  247C 00003000            585      MOVE.L #TABLERO,A2
+00001620  4EB9 00001756            586      JSR LINEA_UNOS
+00001626                           587         
+00001626                           588  NEXT_7    
+00001626  1412                     589      MOVE.B (A2),D2
+00001628  B43C 0000                590      CMP.B #0,D2
+0000162C  6700 005E                591      BEQ POSICION
+00001630                           592          
+00001630                           593  NEXT_8
+00001630  4EF9 00001636            594      JMP END_LINEA
+00001636                           595           
+00001636                           596  END_LINEA
+00001636                           597  
+00001636  B5FC 00003008            598      CMP.L #$3008,A2
+0000163C  6700 00AE                599      BEQ JUMP_1
+00001640  B5FC 00003018            600      CMP.L #$3018,A2
+00001646  6700 00AE                601      BEQ JUMP_2
+0000164A  B5FC 00003028            602      CMP.L #$3028,A2
+00001650  6700 00AE                603      BEQ JUMP_3
+00001654  B5FC 00003038            604      CMP.L #$3038,A2
+0000165A  6700 00AE                605      BEQ JUMP_4
+0000165E  B5FC 00003048            606      CMP.L #$3048,A2     
+00001664  6700 0008                607      BEQ NUM_ZEROS
+00001668  528A                     608      ADD.L #1,A2
+0000166A  4EF8 1626                609      JMP NEXT_7
+0000166E                           610      
+0000166E                           611  NUM_ZEROS
+0000166E                           612  
+0000166E  2A39 0000B008            613      MOVE.L N_ZEROS, D5
+00001674  BABC 00000000            614      CMP.L #0, D5  
+0000167A  6700 0098                615      BEQ END_CAIDA
+0000167E  23FC 00000000 0000B008   616      MOVE.L #0, N_ZEROS 
+00001688  4EF8 161A                617      JMP INITIAL
+0000168C                           618      
+0000168C                           619      
+0000168C                           620  POSICION  
+0000168C                           621  
+0000168C  2C39 0000B008            622      MOVE.L N_ZEROS,D6
+00001692  5286                     623      ADD.L #1,D6
+00001694  23C6 0000B008            624      MOVE.L D6,N_ZEROS
+0000169A  4286                     625      CLR.L D6
+0000169C                           626      
+0000169C  264A                     627      MOVE.L A2,A3   
+0000169E  97FC 00000010            628      SUB.L #$10,A3
+000016A4  1613                     629      MOVE.B (A3),D3
+000016A6  B63C 00FF                630      CMP.B #$FF,D3
+000016AA  6700 000A                631      BEQ LLAMAR_RESERVA 
+000016AE                           632      
+000016AE                           633     
+000016AE                           634  NEXT_9
+000016AE  B63C 0000                635      CMP.B #0,D3
+000016B2  6600 0016                636      BNE CAE_CANDY
+000016B6                           637      
+000016B6                           638      
+000016B6                           639  LLAMAR_RESERVA
+000016B6                           640      
+000016B6  2879 00005004            641      MOVE.L PUNTERO_RESERVA, A4
+000016BC  1694                     642      MOVE.B (A4),(A3)
+000016BE  528C                     643      ADD.L #1,A4
+000016C0  23CC 00005004            644      MOVE.L A4, PUNTERO_RESERVA
+000016C6  4EF8 16AE                645      JMP NEXT_9
+000016CA                           646      
+000016CA                           647             
+000016CA                           648  CAE_CANDY 
+000016CA  23CA 00005010            649      MOVE.L A2,DIR_INICIAL  
+000016D0  23CB 00005014            650      MOVE.L A3,DIR_FINAL
+000016D6                           651  
+000016D6  4EB8 133E                652      JSR MOVIMIENTO_MEMORIA
+000016DA  4EB9 0000183C            653      JSR REFRESCO_PANTALLA
+000016E0                           654      
+000016E0  7A03                     655      MOVE.L #3,D5
+000016E2  4EB9 0000177E            656      JSR WASTE_TIME
+000016E8  4EF8 1630                657      JMP NEXT_8 
+000016EC                           658      
+000016EC                           659      
+000016EC                           660      
+000016EC                           661  
+000016EC                           662      
+000016EC                           663  JUMP_1
+000016EC  247C 00003010            664      MOVE.L #$3010,A2
+000016F2  4EF8 1626                665      JMP NEXT_7
+000016F6                           666      
+000016F6                           667  JUMP_2
+000016F6  247C 00003020            668      MOVE.L #$3020,A2
+000016FC  4EF8 1626                669      JMP NEXT_7
+00001700                           670      
+00001700                           671  JUMP_3
+00001700  247C 00003030            672      MOVE.L #$3030,A2
+00001706  4EF8 1626                673      JMP NEXT_7
+0000170A                           674      
+0000170A                           675  JUMP_4
+0000170A  247C 00003040            676      MOVE.L #$3040,A2
+00001710  4EF8 1626                677      JMP NEXT_7
+00001714                           678      
+00001714                           679  END_CAIDA         *se llama otra vez a borrado para comprobar si se ha producido reacciones en cadena   
+00001714                           680  
+00001714  23FC 00000000 0000B008   681      MOVE.L #0,N_ZEROS
+0000171E                           682      
+0000171E  4EB8 136C                683      JSR BORRAR
+00001722                           684      
+00001722  2839 0000E000            685      MOVE.L N_CANCEL,D4
+00001728  B8BC 00000000            686      CMP.L #0,D4
+0000172E  6700 001E                687      BEQ SALTO
+00001732  4EB9 0000183C            688      JSR REFRESCO_PANTALLA
+00001738                           689      
+00001738  7A07                     690      MOVE.L #7,D5
+0000173A  4EB9 0000177E            691      JSR WASTE_TIME
+00001740                           692      
+00001740  23FC 00000000 0000E000   693      MOVE.L #0,N_CANCEL
+0000174A  4EF8 161A                694      JMP INITIAL
+0000174E                           695                        
+0000174E                           696  SALTO
+0000174E  4EB9 0000183C            697      JSR REFRESCO_PANTALLA    
+00001754  4E75                     698      RTS 
+00001756                           699  
+00001756                           700  
+00001756                           701  LINEA_UNOS
+00001756  2A3C 00003000            702      MOVE.L #TABLERO,D5
+0000175C  0485 00000010            703      SUB.L #$10,D5
+00001762  2A45                     704      MOVE.L D5,A5
+00001764  2ABC FFFFFFFF            705      MOVE.L #$FFFFFFFF,(A5)
+0000176A  5885                     706      ADD.L #$4,D5  
+0000176C  2A45                     707      MOVE.L D5,A5
+0000176E  2ABC FFFFFFFF            708      MOVE.L #$FFFFFFFF,(A5)
+00001774  4285                     709      CLR.L D5
+00001776  2A7C 00000000            710      MOVE.L #0,A5
+0000177C  4E75                     711      RTS
+0000177E                           712          
+0000177E                           713    
+0000177E                           714      
+0000177E                           715  
+0000177E                           716  
+0000177E                           717  **********************************************************
+0000177E                           718  **********************************************************
+0000177E                           719  *FUNCIONES SECUNDARIAS
+0000177E                           720  **********************
+0000177E                           721  **********************
+0000177E                           722  WASTE_TIME 
+0000177E                           723              
+0000177E  7EFF                     724        MOVE.L #$FFFFFFFF,D7 
+00001780                           725  
+00001780                           726  PER_TIEMPO      
+00001780  4E71                     727        NOP
+00001782  51CF FFFC                728        DBF D7, PER_TIEMPO
+00001786                           729        
+00001786  51CD FFF6                730        DBF D5,WASTE_TIME
+0000178A                           731        
+0000178A  4E75                     732        RTS
+0000178C                           733  **********************
+0000178C                           734  ALLOWED_AD *PARA QUE EL PUNTERO NO SE SALGA DEL TABLERO
+0000178C                           735  
+0000178C  23C6 0000D034            736      MOVE.L D6, ADDR
+00001792                           737      
+00001792                           738  STEP1   
+00001792  2A39 0000D034            739      MOVE.L ADDR,D5
+00001798  CAFC 0010                740      MULU #16,D5
+0000179C  4245                     741      CLR.W D5
+0000179E  4845                     742      SWAP D5
+000017A0  BABC 00000002            743      CMP.L #2,D5
+000017A6  6600 000C                744      BNE STEP2
+000017AA                           745      
+000017AA  13FC 0000 0000D038       746      MOVE.B #0,ALLOWED
+000017B2  4E75                     747      RTS
+000017B4                           748      
+000017B4                           749  STEP2    
+000017B4  2A39 0000D034            750      MOVE.L ADDR,D5
+000017BA  CAFC 0010                751      MULU #16,D5
+000017BE                           752      
+000017BE  BA3C 0080                753      CMP.B #$80,D5
+000017C2  6600 000C                754      BNE STEP3
+000017C6                           755      
+000017C6  13FC 0000 0000D038       756      MOVE.B #0,ALLOWED
+000017CE  4E75                     757      RTS 
+000017D0                           758  STEP3
+000017D0  BA3C 00F0                759      CMP.B #$F0,D5     
+000017D4  6600 000C                760      BNE STEP4
+000017D8                           761      
+000017D8  13FC 0000 0000D038       762      MOVE.B #0,ALLOWED
+000017E0  4E75                     763      RTS
+000017E2                           764      
+000017E2                           765  STEP4   
+000017E2  2A39 0000D034            766      MOVE.L ADDR,D5
+000017E8  CAFC 0010                767      MULU #16,D5
+000017EC  4205                     768      CLR.B D5
+000017EE  4845                     769      SWAP D5
+000017F0  4245                     770      CLR.W D5
+000017F2  4845                     771      SWAP D5
+000017F4  8AFC 0010                772      DIVU #16,D5
+000017F8  8AFC 0010                773      DIVU #16,D5
+000017FC  BABC 00000005            774      CMP.L #5,D5
+00001802  6600 000C                775      BNE FIN_ALLOWED
+00001806                           776      
+00001806  13FC 0000 0000D038       777      MOVE.B #0,ALLOWED
+0000180E  4E75                     778      RTS
+00001810                           779      
+00001810                           780  FIN_ALLOWED    
+00001810                           781       
+00001810  13FC 0001 0000D038       782      MOVE.B #1,ALLOWED
+00001818  4E75                     783      RTS
+0000181A                           784  ******************************    
+0000181A                           785  TIEMPO_TECLADO *solo lee una vez y no vuelve 
+0000181A                           786                 *a leer hasta que no sueltes la tecla
+0000181A                           787                 
+0000181A  2C39 00005000            788      MOVE.L  PUNTERO, D6                           
+00001820  7013                     789      MOVE.L  #19,D0            
+00001822  4281                     790      CLR.L D1 
+00001824  223C 25262728            791      MOVE.L #$25262728,D1                 
+0000182A  4E4F                     792      TRAP  #15
+0000182C                           793      
+0000182C  B2BC 00000000            794      CMP.L #$00000000,D1        
+00001832  6700 0006                795      BEQ FIN_TECLADO
+00001836  4EF8 181A                796      JMP TIEMPO_TECLADO
+0000183A                           797      
+0000183A                           798      
+0000183A                           799  FIN_TECLADO
+0000183A                           800   
+0000183A  4E75                     801      RTS
+0000183C                           802  *******************************   
+0000183C                           803         
+0000183C                           804  **********************************************************    
+0000183C                           805  **********************************************************
+0000183C                           806  *FUNCIONES GRAFICAS
+0000183C                           807  *******************
+0000183C                           808  REFRESCO_PANTALLA *DIBUJA CANDYS
+0000183C                           809      
+0000183C  227C 00000000            810      MOVE.L #0,A1
+00001842  4281                     811      CLR.L D1
+00001844  4282                     812      CLR.L D2
+00001846  4283                     813      CLR.L D3
+00001848  4284                     814      CLR.L D4
+0000184A  4287                     815      CLR.L D7
+0000184C  267C 00003000            816      MOVE.L #TABLERO,A3
+00001852                           817      
+00001852  7E27                     818      MOVE.L #39,D7
+00001854                           819  NEXT_10    
+00001854  4EB9 0000186C            820      JSR POSITION *detecta posicion   
+0000185A  4EB9 000018E2            821      JSR DIBUJAR_CANDY *lee de memoria y escoge el color
+00001860  4EB9 00001992            822      JSR S_LINEA * comprueba que se ha llegado al final de una linea
+00001866  51CF FFEC                823      DBF D7,NEXT_10 
+0000186A  4E75                     824      RTS
+0000186C                           825  POSITION
+0000186C  220B                     826      MOVE.L A3,D1
+0000186E  C2FC 0010                827      MULU #16,D1
+00001872  4841                     828      SWAP D1
+00001874  4241                     829      CLR.W D1
+00001876  4841                     830      SWAP D1
+00001878  C2FC 0010                831      MULU #16,D1
+0000187C  C2FC 0010                832      MULU #16,D1
+00001880  4841                     833      SWAP D1
+00001882  3401                     834      MOVE.W D1,D2
+00001884  4241                     835      CLR.W D1
+00001886  4841                     836      SWAP D1
+00001888                           837      
+00001888  82FC 0010                838      DIVU #16,D1
+0000188C  82FC 0010                839      DIVU #16,D1
+00001890  82FC 0010                840      DIVU #16,D1
+00001894                           841      
+00001894  2601                     842      MOVE.L D1,D3
+00001896  2802                     843      MOVE.L D2,D4
+00001898                           844      
+00001898  C2FC 0032                845      MULU #50,D1 *X_1
+0000189C  C4FC 0032                846      MULU #50,D2 *Y_1
+000018A0  C6FC 0032                847      MULU #50,D3 *X_2
+000018A4  C8FC 0032                848      MULU #50,D4 *Y_2
+000018A8                           849      
+000018A8  0681 0000003C            850      ADD.L #60,D1  
+000018AE  0682 0000003C            851      ADD.L #60,D2
+000018B4  0683 0000005A            852      ADD.L #90,D3  
+000018BA  0684 0000005A            853      ADD.L #90,D4
+000018C0                           854      
+000018C0  23C1 0000D000            855      MOVE.L D1,S_HORIZONTAL_1
+000018C6  23C2 0000D004            856      MOVE.L D2,S_VERTICAL_1 
+000018CC  23C3 0000D008            857      MOVE.L D3,S_HORIZONTAL_2
+000018D2  23C4 0000D00C            858      MOVE.L D4,S_VERTICAL_2
+000018D8                           859   
+000018D8  4281                     860      CLR.L D1
+000018DA  4282                     861      CLR.L D2
+000018DC  4283                     862      CLR.L D3
+000018DE  4284                     863      CLR.L D4
+000018E0                           864        
+000018E0  4E75                     865      RTS
+000018E2                           866          
+000018E2                           867  DIBUJAR_CANDY   
+000018E2  1613                     868      MOVE.B (A3),D3
+000018E4  B6BC 00000001            869      CMP.L #01,D3
+000018EA  6700 0036                870      BEQ DIBUJAR_AMARILLO
+000018EE  B6BC 00000002            871      CMP.L #02,D3
+000018F4  6700 0038                872      BEQ DIBUJAR_AZUL
+000018F8  B6BC 00000003            873      CMP.L #03,D3
+000018FE  6700 003A                874      BEQ DIBUJAR_MORADO
+00001902  B6BC 00000004            875      CMP.L #04,D3
+00001908  6700 003C                876      BEQ DIBUJAR_ROJO
+0000190C  B6BC 00000005            877      CMP.L #05,D3
+00001912  6700 003E                878      BEQ DIBUJAR_VERDE
+00001916  B6BC 00000000            879      CMP.L #00,D3
+0000191C  6700 0040                880      BEQ DIBUJAR_NEGRO
+00001920  4E75                     881      RTS
+00001922                           882      
+00001922                           883  DIBUJAR_AMARILLO
+00001922  2239 0000C000            884      MOVE.L COLOR_AMARILLO,D1
+00001928  4EF9 0000196A            885      JMP DIBUJAR
+0000192E                           886  DIBUJAR_AZUL
+0000192E  2239 0000C010            887      MOVE.L COLOR_AZUL,D1
+00001934  4EF9 0000196A            888      JMP DIBUJAR
+0000193A                           889  DIBUJAR_MORADO
+0000193A  2239 0000C020            890      MOVE.L COLOR_MORADO,D1
+00001940  4EF9 0000196A            891      JMP DIBUJAR
+00001946                           892  DIBUJAR_ROJO
+00001946  2239 0000C030            893      MOVE.L COLOR_ROJO,D1
+0000194C  4EF9 0000196A            894      JMP DIBUJAR
+00001952                           895  DIBUJAR_VERDE
+00001952  2239 0000C040            896      MOVE.L COLOR_VERDE,D1
+00001958  4EF9 0000196A            897      JMP DIBUJAR
+0000195E                           898  DIBUJAR_NEGRO
+0000195E  2239 0000C050            899      MOVE.L COLOR_NEGRO,D1
+00001964  4EF9 0000196A            900      JMP DIBUJAR
+0000196A                           901     
+0000196A                           902  DIBUJAR
+0000196A                           903  
+0000196A  7050                     904      MOVE.L #80,D0
+0000196C  4E4F                     905      TRAP #15
+0000196E  7051                     906      MOVE.L #81,D0
+00001970  4E4F                     907      TRAP #15
+00001972  2239 0000D000            908      MOVE.L  S_HORIZONTAL_1,D1       
+00001978  2439 0000D004            909      MOVE.L  S_VERTICAL_1,D2     
+0000197E  2639 0000D008            910      MOVE.L  S_HORIZONTAL_2,D3       
+00001984  2839 0000D00C            911      MOVE.L  S_VERTICAL_2,D4 
+0000198A  103C 0057                912      MOVE.B  #87,D0  
+0000198E  4E4F                     913      TRAP    #15
+00001990  4E75                     914      RTS
+00001992                           915  
+00001992                           916  S_LINEA
+00001992  B7FC 00003007            917      CMP.L #$3007,A3
+00001998  6700 002E                918      BEQ SALTO1
+0000199C  B7FC 00003017            919      CMP.L #$3017,A3
+000019A2  6700 002C                920      BEQ SALTO2
+000019A6  B7FC 00003027            921      CMP.L #$3027,A3
+000019AC  6700 002A                922      BEQ SALTO3
+000019B0  B7FC 00003037            923      CMP.L #$3037,A3
+000019B6  6700 0028                924      BEQ SALTO4
+000019BA  B7FC 00003047            925      CMP.L #$3047,A3
+000019C0  6700 0026                926      BEQ SALTO5
+000019C4                           927      
+000019C4  528B                     928      ADD.L #1,A3
+000019C6  4E75                     929      RTS
+000019C8                           930      
+000019C8                           931  SALTO1
+000019C8  267C 00003010            932      MOVE.L #$3010,A3
+000019CE  4E75                     933      RTS
+000019D0                           934  SALTO2
+000019D0  267C 00003020            935      MOVE.L #$3020,A3
+000019D6  4E75                     936      RTS
+000019D8                           937  SALTO3
+000019D8  267C 00003030            938      MOVE.L #$3030,A3
+000019DE  4E75                     939      RTS
+000019E0                           940  SALTO4
+000019E0  267C 00003040            941      MOVE.L #$3040,A3
+000019E6  4E75                     942      RTS
+000019E8                           943  SALTO5
+000019E8  267C 00003050            944      MOVE.L #$3050,A3
+000019EE  4E75                     945      RTS
+000019F0                           946          
+000019F0  FFFF FFFF                947      SIMHALT
+000019F4                           948  *******************
+000019F4                           949  REFRESCO_PUNTERO
+000019F4                           950        
+000019F4  7EFF                     951        MOVE.L #$FFFFFFFF,D7
+000019F6                           952        
+000019F6                           953   
+000019F6                           954      
+000019F6  227C 00000000            955      MOVE.L #0,A1
+000019FC  4280                     956      CLR.L D0
+000019FE  4281                     957      CLR.L D1
+00001A00  4282                     958      CLR.L D2
+00001A02  4283                     959      CLR.L D3
+00001A04  4284                     960      CLR.L D4
+00001A06  4287                     961      CLR.L D7
+00001A08  267C 00003000            962      MOVE.L #TABLERO,A3
+00001A0E                           963  NEXT_11    
+00001A0E  4EB9 00001A1C            964      JSR POS   
+00001A14  4EB9 00001A72            965      JSR SELEC 
+00001A1A  4E75                     966      RTS
+00001A1C                           967      
+00001A1C                           968  POS
+00001A1C  2239 00005000            969      MOVE.L PUNTERO,D1
+00001A22  C2FC 0010                970      MULU #16,D1
+00001A26  4841                     971      SWAP D1
+00001A28  4241                     972      CLR.W D1
+00001A2A  4841                     973      SWAP D1
+00001A2C  C2FC 0010                974      MULU #16,D1
+00001A30  C2FC 0010                975      MULU #16,D1
+00001A34  4841                     976      SWAP D1
+00001A36  3401                     977      MOVE.W D1,D2
+00001A38  4241                     978      CLR.W D1
+00001A3A  4841                     979      SWAP D1
+00001A3C                           980      
+00001A3C  82FC 0010                981      DIVU #16,D1
+00001A40  82FC 0010                982      DIVU #16,D1
+00001A44  82FC 0010                983      DIVU #16,D1
+00001A48                           984      
+00001A48                           985  
+00001A48                           986      
+00001A48  C2FC 0032                987      MULU #50,D1 *X_1
+00001A4C  C4FC 0032                988      MULU #50,D2 *Y_1
+00001A50                           989  
+00001A50                           990      
+00001A50  0681 00000033            991      ADD.L #51,D1  
+00001A56  0682 00000033            992      ADD.L #51,D2
+00001A5C                           993  
+00001A5C                           994      
+00001A5C  23C1 0000D000            995      MOVE.L D1,S_HORIZONTAL_1
+00001A62  23C2 0000D004            996      MOVE.L D2,S_VERTICAL_1 
+00001A68                           997  
+00001A68                           998   
+00001A68  4281                     999      CLR.L D1
+00001A6A  4282                    1000      CLR.L D2
+00001A6C  4283                    1001      CLR.L D3
+00001A6E  4284                    1002      CLR.L D4
+00001A70                          1003        
+00001A70  4E75                    1004      RTS
+00001A72                          1005  
+00001A72                          1006  SELEC   
+00001A72  2639 00005008           1007      MOVE.L ESTADO_SELECCION,D3
+00001A78  B6BC 00000001           1008      CMP.L #01,D3
+00001A7E  6700 0008               1009      BEQ DIBUJAR_SPUNTERO
+00001A82  4EF9 00001A94           1010      JMP DIBUJAR_PUNTERO 
+00001A88                          1011     
+00001A88                          1012  DIBUJAR_SPUNTERO *puntero cuando está seleccionado
+00001A88  2A7C 0000D010           1013      MOVE.L #COLOR_SPUNTERO,A5
+00001A8E  4EF9 00001AAC           1014      JMP DRAW_PUNTERO 
+00001A94                          1015  DIBUJAR_PUNTERO *puntero cuando se va a escoger candy
+00001A94  2A7C 0000D01C           1016      MOVE.L #COLOR_PUNTERO,A5
+00001A9A  4EF9 00001AAC           1017      JMP DRAW_PUNTERO 
+00001AA0                          1018  BORRAR_PUNTERO *borrado de puntero
+00001AA0  2A7C 0000D028           1019      MOVE.L #COLOR_BP,A5    
+00001AA6  4EF9 00001AAC           1020      JMP DRAW_PUNTERO 
+00001AAC                          1021  
+00001AAC                          1022      
+00001AAC                          1023  DRAW_PUNTERO   *con la posicion calculada dibuja varios cuadrados con 4 líneas
+00001AAC  4285                    1024      CLR.L D5
+00001AAE  7C02                    1025      MOVE.L #2,D6
+00001AB0                          1026      
+00001AB0                          1027  DIB_LOOP                 
+00001AB0                          1028  
+00001AB0  7050                    1029      MOVE.L #80,D0
+00001AB2  221D                    1030      MOVE.L (A5)+,D1
+00001AB4  4E4F                    1031      TRAP #15
+00001AB6                          1032      
+00001AB6  2239 0000D000           1033      MOVE.L  S_HORIZONTAL_1,D1
+00001ABC  D285                    1034      ADD.L   D5,D1   
+00001ABE  2439 0000D004           1035      MOVE.L  S_VERTICAL_1,D2
+00001AC4  D485                    1036      ADD.L   D5,D2
+00001AC6                          1037      
+00001AC6  7056                    1038      MOVE.L #86,D0
+00001AC8  4E4F                    1039      TRAP #15
+00001ACA                          1040      
+00001ACA  2239 0000D000           1041      MOVE.L  S_HORIZONTAL_1,D1
+00001AD0  0681 00000030           1042      ADD.L   #48,D1
+00001AD6  9285                    1043      SUB.L   D5,D1   
+00001AD8  2439 0000D004           1044      MOVE.L  S_VERTICAL_1,D2
+00001ADE  D485                    1045      ADD.L   D5,D2
+00001AE0                          1046      
+00001AE0  7055                    1047      MOVE.L #85,D0
+00001AE2  4E4F                    1048      TRAP #15
+00001AE4                          1049      
+00001AE4  2239 0000D000           1050      MOVE.L  S_HORIZONTAL_1,D1
+00001AEA  0681 00000030           1051      ADD.L   #48,D1
+00001AF0  9285                    1052      SUB.L   D5,D1   
+00001AF2  2439 0000D004           1053      MOVE.L  S_VERTICAL_1,D2
+00001AF8  0682 00000030           1054      ADD.L   #48,D2
+00001AFE  9485                    1055      SUB.L   D5,D2
+00001B00                          1056      
+00001B00  7055                    1057      MOVE.L #85,D0
+00001B02  4E4F                    1058      TRAP #15
+00001B04                          1059      
+00001B04  2239 0000D000           1060      MOVE.L  S_HORIZONTAL_1,D1
+00001B0A  D285                    1061      ADD.L   D5,D1   
+00001B0C  2439 0000D004           1062      MOVE.L  S_VERTICAL_1,D2
+00001B12  0682 00000030           1063      ADD.L   #48,D2
+00001B18  9485                    1064      SUB.L   D5,D2
+00001B1A                          1065      
+00001B1A  7055                    1066      MOVE.L #85,D0
+00001B1C  4E4F                    1067      TRAP #15
+00001B1E                          1068              
+00001B1E  2239 0000D000           1069      MOVE.L  S_HORIZONTAL_1,D1
+00001B24  D285                    1070      ADD.L   D5,D1   
+00001B26  2439 0000D004           1071      MOVE.L  S_VERTICAL_1,D2
+00001B2C  D485                    1072      ADD.L   D5,D2
+00001B2E                          1073      
+00001B2E  7055                    1074      MOVE.L #85,D0
+00001B30  4E4F                    1075      TRAP #15        
+00001B32                          1076  
+00001B32                          1077      
+00001B32  5285                    1078      ADD.L #1,D5
+00001B34  51CE FF7A               1079      DBF D6, DIB_LOOP 
+00001B38                          1080      
+00001B38  4E75                    1081      RTS
+00001B3A                          1082  
+00001B3A                          1083  *******************
+00001B3A                          1084  CREAR_TABLA
+00001B3A                          1085  
+00001B3A  7E10                    1086      MOVE.L #16,D7
+00001B3C  227C 0000501C           1087      MOVE.L #TABLA,A1
+00001B42                          1088  
+00001B42                          1089  RETAR 
+00001B42                          1090      
+00001B42  7050                    1091      MOVE.L #80,D0
+00001B44  223C 00FFFFFF           1092      MOVE.L #$FFFFFF,D1
+00001B4A  4E4F                    1093      TRAP #15
+00001B4C  2219                    1094      MOVE.L (A1)+,D1
+00001B4E  2419                    1095      MOVE.L (A1)+,D2
+00001B50  2619                    1096      MOVE.L (A1)+,D3
+00001B52  2819                    1097      MOVE.L (A1)+,D4
+00001B54  7054                    1098      MOVE.L #84,D0
+00001B56  4E4F                    1099      TRAP #15
+00001B58  51CF FFE8               1100      DBF D7,RETAR
+00001B5C                          1101      
+00001B5C  4E75                    1102      RTS
+00001B5E                          1103  *********************    
+00001B5E                          1104  HELLO_PLAYER                                        
+00001B5E  227C 00004033           1105      MOVE.L #LINEA_VACIA,A1
+00001B64  700D                    1106      MOVE.L #13,D0
+00001B66  4E4F                    1107      TRAP #15
+00001B68                          1108      
+00001B68  227C 00004000           1109      MOVE.L #MENSAJE_INICIAL, A1
+00001B6E  700D                    1110      MOVE.L #13,D0
+00001B70  4E4F                    1111      TRAP #15
+00001B72                          1112      
+00001B72  7E14                    1113      MOVE.L #20,D7
+00001B74                          1114      
+00001B74                          1115  LOOP_0   *salto de lineas para luego poner autores
+00001B74  227C 00004033           1116      MOVE.L #LINEA_VACIA,A1
+00001B7A  700D                    1117      MOVE.L #13,D0
+00001B7C  4E4F                    1118      TRAP #15
+00001B7E  51CF FFF4               1119      DBF D7,LOOP_0
+00001B82                          1120      
+00001B82  227C 00004034           1121      MOVE.L #AUTORES, A1
+00001B88  700D                    1122      MOVE.L #13,D0
+00001B8A  4E4F                    1123      TRAP #15
+00001B8C                          1124      
+00001B8C  4E75                    1125      RTS
+00001B8E                          1126  *************************
+00001B8E                          1127  
+00001B8E                          1128  BYE_PLAYER
+00001B8E                          1129      
+00001B8E  7050                    1130      MOVE.L #80, D0     *color de letra
+00001B90  4281                    1131      CLR.L D1
+00001B92  72FF                    1132      MOVE.L #$FFFFFFFF,D1
+00001B94  4E4F                    1133      TRAP #15
+00001B96                          1134  
+00001B96  7051                    1135      MOVE.L #81, D0     * color de fondo
+00001B98  4281                    1136      CLR.L D1
+00001B9A  7200                    1137      MOVE.L #$00000000,D1
+00001B9C  4E4F                    1138      TRAP #15
+00001B9E                          1139      
+00001B9E  227C 00004033           1140      MOVE.L #LINEA_VACIA,A1
+00001BA4  700D                    1141      MOVE.L #13,D0
+00001BA6  4E4F                    1142      TRAP #15
+00001BA8                          1143  
+00001BA8  227C 00004080           1144      MOVE.L #MENSAJE_FINAL1, A1 *fin juego, presiona flecha
+00001BAE  700D                    1145      MOVE.L #13,D0
+00001BB0  4E4F                    1146      TRAP #15
+00001BB2                          1147      
+00001BB2  4281                    1148      CLR.L D1
+00001BB4                          1149  
+00001BB4                          1150  LOOP_FINAL_1 *ESPERA ENTRADA DE TECLADO PARA DAR LA PUNTUACION DEL JUGADOR    
+00001BB4                          1151                                
+00001BB4  7013                    1152       MOVE.L  #19,D0            
+00001BB6  4281                    1153       CLR.L D1 
+00001BB8  223C 25262728           1154       MOVE.L #$25262728,D1                 
+00001BBE  4E4F                    1155       TRAP  #15
+00001BC0                          1156       
+00001BC0  B2BC 00000000           1157      CMP.L #0, D1
+00001BC6                          1158  
+00001BC6  67EC                    1159      BEQ LOOP_FINAL_1
+00001BC8                          1160      
+00001BC8  4281                    1161      CLR.L D1       *CLEAR THE BOARD 
+00001BCA  323C FF00               1162      MOVE.W #$FF00,D1
+00001BCE  700B                    1163      MOVE.L #11,D0
+00001BD0  4E4F                    1164      TRAP #15
+00001BD2                          1165      
+00001BD2  227C 00004033           1166      MOVE.L #LINEA_VACIA,A1
+00001BD8  700D                    1167      MOVE.L #13,D0
+00001BDA  4E4F                    1168      TRAP #15
+00001BDC                          1169      
+00001BDC  227C 000040CE           1170      MOVE.L #MENSAJE_FINAL2, A1
+00001BE2  700D                    1171      MOVE.L #13,D0
+00001BE4  4E4F                    1172      TRAP #15
+00001BE6                          1173      
+00001BE6  4285                    1174      CLR.L D5
+00001BE8  4286                    1175      CLR.L D6
+00001BEA  4287                    1176      CLR.L D7
+00001BEC                          1177      
+00001BEC                          1178      
+00001BEC  7C0F                    1179      MOVE.L #15,D6
+00001BEE                          1180  LOOP_FINAL_2  *pone ptos mientras que calcula el resultado
+00001BEE                          1181      
+00001BEE  227C 000040ED           1182      MOVE.L #LINEA_PUNTOS, A1
+00001BF4  700D                    1183      MOVE.L #13,D0
+00001BF6  4E4F                    1184      TRAP #15
+00001BF8                          1185      
+00001BF8  7A1E                    1186      MOVE.L #30,D5
+00001BFA  4EB8 177E               1187      JSR WASTE_TIME
+00001BFE  4285                    1188      CLR.L D5
+00001C00                          1189      
+00001C00                          1190      
+00001C00  51CE FFEC               1191      DBF D6,LOOP_FINAL_2 * fin loop ptos
+00001C04                          1192         
+00001C04  227C 000040F8           1193      MOVE.L #MENSAJE_FINAL3,A1 
+00001C0A  700E                    1194      MOVE.L #14,D0
+00001C0C  4E4F                    1195      TRAP #15
+00001C0E                          1196      
+00001C0E  2239 00005018           1197      MOVE.L N_PUNTOS,D1
+00001C14  7003                    1198      MOVE.L #3,D0
+00001C16  4E4F                    1199      TRAP #15
+00001C18                          1200      
+00001C18  227C 00004033           1201      MOVE.L #LINEA_VACIA,A1
+00001C1E  700D                    1202      MOVE.L #13,D0
+00001C20  4E4F                    1203      TRAP #15
+00001C22                          1204      
+00001C22  227C 00004107           1205      MOVE.L #MENSAJE_FINAL4,A1 
+00001C28  700D                    1206      MOVE.L #13,D0
+00001C2A  4E4F                    1207      TRAP #15
+00001C2C                          1208      
+00001C2C                          1209      
+00001C2C                          1210      
+00001C2C                          1211      
+00001C2C  4E75                    1212      RTS    
+00001C2E                          1213  
+00001C2E                          1214  
+00001C2E                          1215  
+00001C2E                          1216  
+00001C2E                          1217      
+00001C2E                          1218  *********************************************
+00001C2E                          1219  *CTES
+00002000                          1220         ORG $2000
+00002000                          1221       
+00002000                          1222  RESERVA
+00002000                          1223  * COLUMNAS   1  2  3  4  5  6  7  8 
+00002000= 03 04 03 02 01 01 ...   1224         DC.B 03,04,03,02,01,01,05,05 * 1 FILAS
+00002008= 04 03 04 01 02 05 ...   1225         DC.B 04,03,04,01,02,05,04,02 * 2
+00002010= 05 03 02 04 03 05 ...   1226         DC.B 05,03,02,04,03,05,04,01 * 3
+00002018= 04 03 01 05 03 03 ...   1227         DC.B 04,03,01,05,03,03,03,01 * 4
+00002020= 02 01 02 05 02 02 ...   1228         DC.B 02,01,02,05,02,02,04,01 * 5
+00002028= 05 03 03 01 03 04 ...   1229         DC.B 05,03,03,01,03,04,03,02 * 6
+00002030= 05 03 04 04 05 05 ...   1230         DC.B 05,03,04,04,05,05,04,01 * 7
+00002038= 01 01 03 02 01 01 ...   1231         DC.B 01,01,03,02,01,01,05,05 * 8
+00002040= 04 03 01 05 03 03 ...   1232         DC.B 04,03,01,05,03,03,04,01 * 9
+00002048= 02 01 02 05 02 02 ...   1233         DC.B 02,01,02,05,02,02,04,01 * 10
+00002050= 05 03 03 01 03 04 ...   1234         DC.B 05,03,03,01,03,04,03,02 * 11
+00002058= 05 03 02 04 05 05 ...   1235         DC.B 05,03,02,04,05,05,04,01 * 12
+00002060= 01 01 03 02 01 01 ...   1236         DC.B 01,01,03,02,01,01,05,05 * 13
+00002068= 04 03 01 05 03 03 ...   1237         DC.B 04,03,01,05,03,03,04,01 * 14
+00002070= 02 01 02 05 02 02 ...   1238         DC.B 02,01,02,05,02,02,04,01 * 15
+00002078                          1239         
+00002078                          1240  
+00003000                          1241         ORG $3000
+00003000                          1242       
+00003000                          1243  TABLERO
+00003000                          1244   *COLUMNAS    0  1  2  3  4  5  6  7   FILAS
+00003000= 05 03 03 01 03 04 ...   1245         DC.B 05,03,03,01,03,04,04,02   * 0
+00003010                          1246         ORG $3010
+00003010= 05 03 02 04 05 05 ...   1247         DC.B 05,03,02,04,05,05,04,03   * 1
+00003020                          1248         ORG $3020
+00003020= 01 01 03 02 01 01 ...   1249         DC.B 01,01,03,02,01,01,05,05   * 2
+00003030                          1250         ORG $3030
+00003030= 04 03 01 05 03 03 ...   1251         DC.B 04,03,01,05,03,03,04,01   * 3
+00003040                          1252         ORG $3040
+00003040= 02 01 02 05 02 02 ...   1253         DC.B 02,01,02,05,02,02,04,01  * 4
+00003048                          1254         
+00004000                          1255         ORG $4000
+00004000                          1256         
+00004000                          1257         
+00004000                          1258  MENSAJE_INICIAL
+00004000= 20 20 20 20 20 20 ...   1259         DC.B '       BIENVENIDO A CANDY CRUSH! '
+00004021= 54 49 45 4E 45 53 ...   1260         DC.B 'TIENES 10 JUGADAS',0
+00004033                          1261  LINEA_VACIA
+00004033= 00                      1262         DC.B '',0
+00004034                          1263  AUTORES
+00004034= 20 20 20 20 20 20 ...   1264         DC.B '                                    REALIZADO POR RAFAEL PIRES E IRTAZA ALI',0
+00004080                          1265  MENSAJE_FINAL1
+00004080= 20 20 20 46 49 4E ...   1266         DC.B '   FIN DE JUEGO, PRESIONE UNA FLECHA CUALQUIERA SI DESEA SABER SU PUNTUACIÓN ',0
+000040CE                          1267         
+000040CE                          1268  MENSAJE_FINAL2
+000040CE= 20 20 20 20 20 20 ...   1269         DC.B '         SU PUNTUACIÓN HA SIDO',0 
+000040ED                          1270  
+000040ED                          1271  LINEA_PUNTOS   
+000040ED= 20 20 20 20 20 20 ...   1272         DC.B '         .',0   
+000040F8                          1273  MENSAJE_FINAL3
+000040F8= 20 20 20 20 20 20 ...   1274         DC.B '         PTOS:',0  
+00004107                          1275  MENSAJE_FINAL4
+00004107= 20 20 20 20 20 20 ...   1276         DC.B '                           GRACIAS POR JUGAR :)',0   
+00004137                          1277         
+00005000                          1278         ORG $5000
+00005000                          1279  PUNTERO
+00005000                          1280         DS.L 1
+00005004                          1281  PUNTERO_RESERVA
+00005004                          1282         DS.L 1
+00005008                          1283         
+00005008                          1284  ESTADO_SELECCION                    *SI ES IGUAL A 0 NO ESTÁ SELECCIONADO                               
+00005008= 00000000                1285         DC.L 0                       *SI ES 1 ESTÁ SELECIONADO
+0000500C                          1286  KEYBOARD_INPUT                      *PERMITE VISUALIZAR LA ENTRADA DEL TECLADO EN LA MEMORIA
+0000500C                          1287         DS.L 1
+00005010                          1288  DIR_INICIAL
+00005010                          1289         DS.L 1
+00005014                          1290  DIR_FINAL
+00005014                          1291         DS.L 1 
+00005018                          1292  N_PUNTOS
+00005018= 00000000                1293         DC.L 0
+0000501C                          1294      
+0000501C                          1295  TABLA                               * DIBUJO DE LAS CASILLAS
+0000501C                          1296      *PARA LINEAS VERTICALES
+0000501C= 00000032 00000032 ...   1297      DC.L 50,50,50,300
+0000502C= 00000064 00000032 ...   1298      DC.L 100,50,100,300
+0000503C= 00000096 00000032 ...   1299      DC.L 150,50,150,300
+0000504C= 000000C8 00000032 ...   1300      DC.L 200,50,200,300
+0000505C= 000000FA 00000032 ...   1301      DC.L 250,50,250,300
+0000506C= 0000012C 00000032 ...   1302      DC.L 300,50,300,300
+0000507C= 0000015E 00000032 ...   1303      DC.L 350,50,350,300
+0000508C= 00000190 00000032 ...   1304      DC.L 400,50,400,300
+0000509C= 000001C2 00000032 ...   1305      DC.L 450,50,450,300
+000050AC                          1306      
+000050AC                          1307      *PARA LINEAS HORIZANTALES
+000050AC= 00000032 00000032 ...   1308      DC.L 50,50,450,50
+000050BC= 00000032 00000064 ...   1309      DC.L 50,100,450,100
+000050CC= 00000032 00000096 ...   1310      DC.L 50,150,450,150
+000050DC= 00000032 000000C8 ...   1311      DC.L 50,200,450,200
+000050EC= 00000032 000000FA ...   1312      DC.L 50,250,450,250
+000050FC= 00000032 0000012C ...   1313      DC.L 50,300,450,300
+0000510C                          1314      
+0000A000                          1315      ORG $A000
+0000A000                          1316      
+0000A000                          1317  MARCA_HORIZONTAL   *MARCA PARA GESTIONAR EL BORRADO HORIZONTAL
+0000A000                          1318      DS.L 1
+0000A004                          1319      
+0000A004                          1320  MARCA_VERTICAL
+0000A004                          1321      DS.L 1
+0000A008                          1322  
+0000B000                          1323      ORG $B000   
+0000B000                          1324      
+0000B000                          1325  SUM_HORIZONTAL
+0000B000= 00000000                1326      DC.L 0    
+0000B004                          1327      
+0000B004                          1328  SUM_VERTICAL
+0000B004= 00000000                1329      DC.L 0  
+0000B008                          1330  
+0000B008                          1331  N_ZEROS
+0000B008= 00000000                1332      DC.L 0
+0000B00C                          1333          
+0000C000                          1334      ORG $C000  
+0000C000                          1335  COLOR_AMARILLO 
+0000C000= 0000FFFF                1336       DC.L $0000FFFF
+0000C004                          1337       
+0000C010                          1338       ORG $C010   
+0000C010                          1339  COLOR_AZUL
+0000C010= 00FFFF00                1340       DC.L $00FFFF00 
+0000C014                          1341       
+0000C020                          1342       ORG $C020  
+0000C020                          1343  COLOR_MORADO
+0000C020= 00800080                1344       DC.L $00800080
+0000C024                          1345       
+0000C030                          1346       ORG $C030         
+0000C030                          1347  COLOR_ROJO
+0000C030= 000000FF                1348       DC.L $000000FF
+0000C034                          1349       
+0000C040                          1350       ORG $C040   
+0000C040                          1351  COLOR_VERDE
+0000C040= 0000FF00                1352       DC.L $0000FF00
+0000C044                          1353       
+0000C050                          1354       ORG $C050
+0000C050                          1355  COLOR_NEGRO
+0000C050= 00000000                1356       DC.L $00000000
+0000C054                          1357       
+0000D000                          1358       ORG $D000
+0000D000                          1359       
+0000D000                          1360  S_HORIZONTAL_1
+0000D000                          1361       DS.L 1
+0000D004                          1362  
+0000D004                          1363  S_VERTICAL_1
+0000D004                          1364       DS.L 1
+0000D008                          1365  
+0000D008                          1366  S_HORIZONTAL_2
+0000D008                          1367       DS.L 1 
+0000D00C                          1368  
+0000D00C                          1369  S_VERTICAL_2
+0000D00C                          1370       DS.L 1
+0000D010                          1371       
+0000D010                          1372  COLOR_SPUNTERO
+0000D010= 00FFFFFF 00FFFFFF ...   1373        DC.L $00FFFFFF,$00FFFFFF,$00FFFFFF
+0000D01C                          1374  COLOR_PUNTERO
+0000D01C= 00FFFFFF 00000000 ...   1375        DC.L $00FFFFFF,$00000000,$00FFFFFF
+0000D028                          1376  COLOR_BP      
+0000D028= 00000000 00000000 ...   1377        DC.L $00000000,$00000000,$00000000
+0000D034                          1378           
+0000D034                          1379  ADDR
+0000D034                          1380        DS.L 1
+0000D038                          1381        
+0000D038                          1382  ALLOWED
+0000D038                          1383        DS.B 1 
+0000D039                          1384  
+0000D039                          1385  FINISH_GAME
+0000D039= 00                      1386        DC.B 0
+0000D03A                          1387           
+0000E000                          1388        ORG $E000
+0000E000                          1389  **************************************
+0000E000                          1390  *ESTADO DEL JUEGO
+0000E000                          1391  N_CANCEL
+0000E000= 00000000                1392      DC.L 0
+0000E004                          1393      
+0000E004                          1394  NUM_JUGADAS
+0000E004= 0000000A 00000000       1395      DC.L $A,0    
+0000E00C                          1396  **************************************     
+0000E00C                          1397  THE_END
+0000E00C  FFFF FFFF               1398         SIMHALT    
+0000E010                          1399         END $1000
+
+No errors detected
+No warnings generated
+
+
+SYMBOL TABLE INFORMATION
+Symbol-name         Value
+-------------------------
+ADDR                D034
+ALLOWED             D038
+ALLOWED_AD          178C
+AUTORES             4034
+BORRADO_HORIZONTAL  136C
+BORRADO_VERTICAL    148C
+BORRAR              136C
+BORRAR_PUNTERO      1AA0
+BYE_PLAYER          1B8E
+CAE_CANDY           16CA
+CAIDA               160E
+CANCEL_HORIZONTAL   1442
+CANCEL_VERTICAL     1594
+CHOOSE              122A
+COLOR_AMARILLO      C000
+COLOR_AZUL          C010
+COLOR_BP            D028
+COLOR_MORADO        C020
+COLOR_NEGRO         C050
+COLOR_PUNTERO       D01C
+COLOR_ROJO          C030
+COLOR_SPUNTERO      D010
+COLOR_VERDE         C040
+COMPROBADOR_DE_BORRADO  1060
+COMPROBADOR_DE_ESTADO  1040
+CREAR_TABLA         1B3A
+DIBUJAR             196A
+DIBUJAR_AMARILLO    1922
+DIBUJAR_AZUL        192E
+DIBUJAR_CANDY       18E2
+DIBUJAR_MORADO      193A
+DIBUJAR_NEGRO       195E
+DIBUJAR_PUNTERO     1A94
+DIBUJAR_ROJO        1946
+DIBUJAR_SPUNTERO    1A88
+DIBUJAR_VERDE       1952
+DIB_LOOP            1AB0
+DIR_FINAL           5014
+DIR_INICIAL         5010
+DRAW_PUNTERO        1AAC
+ELEGIR              1026
+END_CAIDA           1714
+END_GAME            10B0
+END_LINEA           1636
+ESTADO_SELECCION    5008
+EXIT                1128
+FINISH_GAME         D039
+FIN_ALLOWED         1810
+FIN_BORRADO         15E2
+FIN_COLUMNA         14F6
+FIN_LINEA           13E0
+FIN_MOV_1           1132
+FIN_MOV_2           113E
+FIN_RECTIFICADO     160C
+FIN_TECLADO         183A
+HELLO_PLAYER        1B5E
+INITIAL             161A
+JUMP_1              16EC
+JUMP_2              16F6
+JUMP_3              1700
+JUMP_4              170A
+KEYBOARD_INPUT      500C
+LINEA_PUNTOS        40ED
+LINEA_UNOS          1756
+LINEA_VACIA         4033
+LLAMAR_RESERVA      16B6
+LOOP_0              1B74
+LOOP_1              10C0
+LOOP_2              1268
+LOOP_3              1384
+LOOP_4              1390
+LOOP_5              1476
+LOOP_6              1496
+LOOP_7              14A2
+LOOP_8              15C8
+LOOP_FINAL_1        1BB4
+LOOP_FINAL_2        1BEE
+MARCA_HORIZONTAL    A000
+MARCA_VERTICAL      A004
+MENSAJE_FINAL1      4080
+MENSAJE_FINAL2      40CE
+MENSAJE_FINAL3      40F8
+MENSAJE_FINAL4      4107
+MENSAJE_INICIAL     4000
+MOVER_CANDY         1268
+MOVER_PUNTERO       10C0
+MOVE_DOWN           11B6
+MOVE_LEFT           11F2
+MOVE_RIGHT          117E
+MOVE_UP             1140
+MOVIMIENTO          1282
+MOVIMIENTO_ABAJO    12FE
+MOVIMIENTO_ARRIBA   12BA
+MOVIMIENTO_DERECHA  12DE
+MOVIMIENTO_IZQUIERDA  1322
+MOVIMIENTO_MEMORIA  133E
+NEXT_1              13C2
+NEXT_10             1854
+NEXT_11             1A0E
+NEXT_2              13D6
+NEXT_3              1412
+NEXT_4              14D8
+NEXT_5              14EC
+NEXT_6              1546
+NEXT_7              1626
+NEXT_8              1630
+NEXT_9              16AE
+NO_CHOOSE           124C
+NUM_JUGADAS         E004
+NUM_ZEROS           166E
+N_CANCEL            E000
+N_PUNTOS            5018
+N_ZEROS             B008
+PER_TIEMPO          1780
+POS                 1A1C
+POSICION            168C
+POSITION            186C
+PREGUNTA_HORIZONTAL  13B4
+PREGUNTA_VERTICAL   14CA
+PUNTERO             5000
+PUNTERO_RESERVA     5004
+RECTIFICAR          15EA
+REFRESCO_PANTALLA   183C
+REFRESCO_PUNTERO    19F4
+RESERVA             2000
+RETAR               1B42
+SALTO               174E
+SALTO1              19C8
+SALTO2              19D0
+SALTO3              19D8
+SALTO4              19E0
+SALTO5              19E8
+SALTO_H1            141A
+SALTO_H2            1424
+SALTO_H3            142E
+SALTO_H4            1438
+SALTO_V1            154E
+SALTO_V2            1558
+SALTO_V3            1562
+SALTO_V4            156C
+SALTO_V5            1576
+SALTO_V6            1580
+SALTO_V7            158A
+SELEC               1A72
+SIGUIENTE_1         1054
+SIGUIENTE_2         1082
+STEP1               1792
+STEP2               17B4
+STEP3               17D0
+STEP4               17E2
+SUMA_HORIZONTAL     13A2
+SUMA_VERTICAL       14B8
+SUM_HORIZONTAL      B000
+SUM_VERTICAL        B004
+S_HORIZONTAL_1      D000
+S_HORIZONTAL_2      D008
+S_LINEA             1992
+S_VERTICAL_1        D004
+S_VERTICAL_2        D00C
+TABLA               501C
+TABLERO             3000
+THE_END             E00C
+TIEMPO_TECLADO      181A
+WASTE_TIME          177E
